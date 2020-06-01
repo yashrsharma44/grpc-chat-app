@@ -1,0 +1,43 @@
+syntax = "proto3";
+package chat;
+
+/*
+-------------------------
+Schema for the Proto file
+
+- Here we have the client requesting a connection
+from the server, so that the server can replay
+all the chats from other client
+
+- Here the client sends a Client Message which 
+is replayed by the server among the subscribers
+
+*/
+
+service Chat {
+    rpc GetMessages(GetMessageRequest) returns (stream ServerMessage);
+    rpc SendMessage(ClientMessage) returns (SendMessageResponse);
+}
+
+
+
+// Client sending a message to a server
+message ClientMessage {
+    string message = 1;
+}
+
+
+// Response message by server of a requested client
+message ServerMessage {
+    string username = 1;
+    string message = 2;
+    int64 timestamp = 3;
+}
+
+// Request of a particular clients message to be received by the requesting client
+message GetMessageRequest {
+    string username = 1;
+}
+
+// Response which is received when a client sends in a request
+message SendMessageResponse {}
