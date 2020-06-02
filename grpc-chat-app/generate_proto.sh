@@ -1,0 +1,1 @@
+protoc grpc-chatapp/schema/chat.proto --go_out=plugins=grpc:. 
