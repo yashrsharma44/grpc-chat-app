@@ -1,6 +1,9 @@
 syntax = "proto3";
 
 package chat;
+
+import "google/protobuf/timestamp.proto";
+
 option go_package="grpc-chatapp/schema";
 /*
 -------------------------
@@ -9,18 +12,56 @@ Schema for the Proto file
 
 */
 
-// Sent Messages
-message Message {
+message LoginRequest {
     string username = 1;
-    int64 timestamp = 2;
-    string content = 3;
 }
 
-message EmptyRequest{}
-message EmptyResponse{}
+message LoginResponse {
+    string token = 1;
+}
+
+message LogoutRequest {
+    string token = 1;
+}
+
+message LogoutResponse {};
+
+// For the client
+message StreamRequest {
+    string message = 1;
+    string name = 2;
+}
+
+// For the server
+message StreamResponse {
+    google.protobuf.Timestamp timestamp = 1;
+
+    oneof event {
+        Message client_message = 2;
+        Shutdown server_shutdown = 3;
+        Login client_login = 4;
+        Logout client_logout =  5;
+    }
+
+    message Login {
+        string name = 1;
+    }
+
+    message  Logout {
+        string name = 1;
+    }
+
+    message Message {
+        string name = 1;
+        string message = 2;
+    }
+
+    message Shutdown {};
+}
 
 service Chat {
-    rpc SendMessage(Message) returns (EmptyResponse){};
-    rpc SubscribeMessage(EmptyRequest) returns (stream Message){};
+    rpc Login(LoginRequest) returns (LoginResponse){};
+    rpc Logout(LogoutRequest) returns (LogoutResponse){};
+    rpc Stream (stream StreamRequest) returns (stream StreamResponse){};
 }
 
