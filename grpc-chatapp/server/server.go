@@ -17,10 +17,13 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const tokenHeader = "x-chat-token"
-const tokenSize = 4
-const responseChannelSize = 20
-const streamChannelSize = 100
+const (
+	tokenHeader         = "x-chat-token"
+	tokenSize           = 4
+	responseChannelSize = 20
+	streamChannelSize   = 100
+	grpcAddress         = "0.0.0.0:50051"
+)
 
 type server struct {
 	CommonChannel          chan chat.StreamResponse
@@ -29,15 +32,14 @@ type server struct {
 	nameMutex, streamMutex sync.RWMutex
 }
 
-func (s *server) generateToken() string {
+func (s *server) generateToken() (string, error) {
 
 	txt := make([]byte, tokenSize)
 	_, err := rand.Read(txt)
 	if err != nil {
-		log.Fatalf("error in generating the token %v", err)
-		return ""
+		return "", err
 	}
-	return fmt.Sprintf("%x", txt)
+	return fmt.Sprintf("%x", txt), nil
 }
 
 func (s *server) addClientName(username string, tkn string) {
@@ -72,7 +74,10 @@ func (s *server) Login(ctx context.Context, req *chat.LoginRequest) (*chat.Login
 
 	// TODO: handle same name people in the chat
 	// Generate a token
-	tkn := s.generateToken()
+	tkn, err := s.generateToken()
+	if err != nil {
+		log.Fatalf("error in generating token %v", err)
+	}
 	// Add the token in the client name
 	s.addClientName(req.Username, tkn)
 	// Send in a notif that broadcast is successful
@@ -136,9 +141,7 @@ func (s *server) CloseStream(tkn string) {
 	s.streamMutex.RLock()
 	defer s.streamMutex.RUnlock()
 
-	if _, ok := s.ClientStream[tkn]; ok {
-		delete(s.ClientStream, tkn)
-	}
+	delete(s.ClientStream, tkn)
 }
 
 func (s *server) extractToken(ctx context.Context) (string, bool) {
@@ -215,7 +218,7 @@ func main() {
 	defer cancel()
 
 	fmt.Println("Hello World")
-	lis, err := net.Listen("tcp", "0.0.0.0:50051")
+	lis, err := net.Listen("tcp", grpcAddress)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
@@ -238,6 +241,7 @@ func main() {
 			cancel()
 		}
 	}()
+
 	<-ctx.Done()
 
 	customServer.CommonChannel <- chat.StreamResponse{
