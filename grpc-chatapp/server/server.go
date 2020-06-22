@@ -18,6 +18,9 @@ import (
 )
 
 const tokenHeader = "x-chat-token"
+const tokenSize = 4
+const responseChannelSize = 20
+const streamChannelSize = 100
 
 type server struct {
 	CommonChannel          chan chat.StreamResponse
@@ -28,7 +31,7 @@ type server struct {
 
 func (s *server) generateToken() string {
 
-	txt := make([]byte, 4)
+	txt := make([]byte, tokenSize)
 	rand.Read(txt)
 
 	return fmt.Sprintf("%x", txt)
@@ -37,25 +40,28 @@ func (s *server) generateToken() string {
 func (s *server) addClientName(username string, tkn string) {
 
 	s.nameMutex.RLock()
+	defer s.nameMutex.RUnlock()
 	s.ClientName[tkn] = username
-	s.nameMutex.RUnlock()
 
 }
 
 func (s *server) getClientName(tkn string) (string, bool) {
 
 	s.nameMutex.RLock()
+	defer s.nameMutex.RUnlock()
+
 	name, ok := s.ClientName[tkn]
-	s.nameMutex.RUnlock()
 	return name, ok
 }
 
 func (s *server) removeClientName(tkn string) string {
 
 	s.nameMutex.RLock()
+	defer s.nameMutex.RUnlock()
+
 	username := s.ClientName[tkn]
 	delete(s.ClientName, tkn)
-	s.nameMutex.RUnlock()
+
 	return username
 }
 
@@ -115,20 +121,21 @@ func (s *server) broadcast() {
 }
 
 func (s *server) OpenStream(tkn string) chan chat.StreamResponse {
-	stream := make(chan chat.StreamResponse, 100)
+	stream := make(chan chat.StreamResponse, responseChannelSize)
 	s.streamMutex.RLock()
-	s.ClientStream[tkn] = stream
-	s.streamMutex.RUnlock()
+	defer s.streamMutex.RUnlock()
 
+	s.ClientStream[tkn] = stream
 	return stream
 }
 
 func (s *server) CloseStream(tkn string) {
 	s.streamMutex.RLock()
+	defer s.streamMutex.RUnlock()
+
 	if _, ok := s.ClientStream[tkn]; ok {
 		delete(s.ClientStream, tkn)
 	}
-	s.streamMutex.RUnlock()
 }
 
 func (s *server) extractToken(ctx context.Context) (string, bool) {
@@ -203,6 +210,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	fmt.Println("Hello World")
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {
@@ -211,7 +219,7 @@ func main() {
 
 	s := grpc.NewServer()
 	customServer := server{
-		CommonChannel: make(chan chat.StreamResponse, 20),
+		CommonChannel: make(chan chat.StreamResponse, responseChannelSize),
 		ClientName:    make(map[string]string),
 		ClientStream:  make(map[string]chan chat.StreamResponse),
 	}
