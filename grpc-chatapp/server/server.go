@@ -15,6 +15,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/grpc-ecosystem/go-grpc-middleware/providers/kit/v2"
 	chat "github.com/yashrsharma44/grpc-chat-app/grpc-chatapp/schema"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -267,6 +268,8 @@ func main() {
 		level.Error(logger).Log("error", "failed to listen the server, exiting..")
 		os.Exit(1)
 	}
+
+	_ = kit.InterceptorLogger()
 
 	s := grpc.NewServer()
 
