@@ -32,8 +32,11 @@ type server struct {
 func (s *server) generateToken() string {
 
 	txt := make([]byte, tokenSize)
-	rand.Read(txt)
-
+	_, err := rand.Read(txt)
+	if err != nil {
+		log.Fatalf("error in generating the token %v", err)
+		return ""
+	}
 	return fmt.Sprintf("%x", txt)
 }
 
@@ -121,7 +124,7 @@ func (s *server) broadcast() {
 }
 
 func (s *server) OpenStream(tkn string) chan chat.StreamResponse {
-	stream := make(chan chat.StreamResponse, responseChannelSize)
+	stream := make(chan chat.StreamResponse, streamChannelSize)
 	s.streamMutex.RLock()
 	defer s.streamMutex.RUnlock()
 
