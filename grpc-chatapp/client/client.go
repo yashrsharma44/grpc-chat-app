@@ -101,7 +101,7 @@ func (c *client) receive(client chat.Chat_StreamClient) {
 		case *chat.StreamResponse_ServerShutdown:
 			fmt.Printf("%v --- the server is shutting down\n", tm)
 		default:
-			fmt.Println("Default case of receive")
+			fmt.Println("Waiting for connection..")
 		}
 
 	}
@@ -145,7 +145,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to login %v", err)
 	}
-
+	fmt.Println("Start Chatting :D..")
 	c.stream()
 	fmt.Println("Logging out..")
 	if err := c.logout(); err != nil {

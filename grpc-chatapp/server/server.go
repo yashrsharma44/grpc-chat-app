@@ -16,6 +16,10 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/kit/v2"
+	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tags"
+
 	chat "github.com/yashrsharma44/grpc-chat-app/grpc-chatapp/schema"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -269,9 +273,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	_ = kit.InterceptorLogger()
-
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		middleware.WithUnaryServerChain(
+			tags.UnaryServerInterceptor(),
+			logging.UnaryServerInterceptor(kit.InterceptorLogger(logger)),
+		),
+		middleware.WithStreamServerChain(
+			tags.StreamServerInterceptor(),
+			logging.StreamServerInterceptor(kit.InterceptorLogger(logger)),
+		),
+	)
 
 	customServer := server{
 		CommonChannel: make(chan chat.StreamResponse, responseChannelSize),
