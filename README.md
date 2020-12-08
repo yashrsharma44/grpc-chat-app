@@ -10,7 +10,7 @@ gRPC based terminal-2-terminal based chat app
 * gRPC uses **HTTP2** internally for blazing fast connectivity, speeding connection **200 - 500%**
 
 ![](./images/http2.gif)
-##
+
 * Server is a **bidi streaming** implementation, while client connects through with the server and subscribes to all the chat messages of other clients, including itself :D.
 
 ![](./images/grpc.png)
